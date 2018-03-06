@@ -2,7 +2,6 @@
 
 # pyldn: A python Linked Data Notifications (LDN) receiver
 
-from flask import Flask, request, render_template, make_response
 import logging
 import requests
 from rdflib import Graph, URIRef, RDF, Namespace
@@ -10,12 +9,9 @@ from rdflib import Graph, URIRef, RDF, Namespace
 # pyldn modules
 from pyldnconfig import Pyldnconfig
 
-# The Flask app
-app = Flask(__name__)
-
 # Logging
 LOG_FORMAT = '%(asctime)-15s [%(levelname)s] (%(module)s.%(funcName)s) %(message)s'
-app.debug_log_format = LOG_FORMAT
+app.debug_log_format = LOG_FORMAT #flask???
 logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
 pyldnlog = logging.getLogger(__name__)
 
@@ -42,28 +38,33 @@ inbox_graph.bind('ldp', ldp)
 # Dict for the notification graphs
 # keys = graph names, values = rdflib.Graph()
 graphs = {}
-
-# Server routes
-@app.route('/', methods=['GET', 'POST'])
-def pyldn():
+class PyldnReceiver(object):
+  def GET(self):
     resp = make_response(render_template('index.html'))
-    resp.headers['X-Powered-By'] = 'https://github.com/albertmeronyo/pyldn'
+    resp = cherrypy.response
+    resp.headers['X-Powered-By'] = 'https://github.com/jasonzou/pyldn'
     resp.headers['Link'] =  '<' + pyldnconf._inbox_url + '>; rel="http://www.w3.org/ns/ldp#inbox", <http://www.w3.org/ns/ldp#Resource>; rel="type", <http://www.w3.org/ns/ldp#RDFSource>; rel="type"'
 
     return resp
+  def POST(self):
+    return GET()
 
-@app.route(pyldnconf._inbox_path, methods=['HEAD', 'OPTIONS'])
-def head_inbox():
+  _cp_dispatch = cherrypy.popargs('id')
+  def HEAD(self, inboxId=None, *args, **kwargs)
+
     resp = make_response()
-    resp.headers['X-Powered-By'] = 'https://github.com/albertmeronyo/pyldn'
+    resp.headers['X-Powered-By'] = 'https://github.com/jasonzou/pyldn'
     resp.headers['Allow'] = "GET, HEAD, OPTIONS, POST"
     resp.headers['Link'] = '<http://www.w3.org/ns/ldp#Resource>; rel="type", <http://www.w3.org/ns/ldp#RDFSource>; rel="type", <http://www.w3.org/ns/ldp#Container>; rel="type", <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'
     resp.headers['Accept-Post'] = 'application/ld+json, text/turtle'
 
     return resp
+  
+def OPTIONS(self, inboxId=None, *args, **kwargs)
+  return HEAD(inboxId, args, kwargs)
 
-@app.route(pyldnconf._inbox_path, methods=['GET'])
-def get_inbox():
+class Inbox(object): 
+  def GET(self):
     pyldnlog.debug("Requested inbox data of {} in {}".format(request.url, request.headers['Accept']))
     if not request.headers['Accept'] or request.headers['Accept'] == '*/*' or 'text/html' in request.headers['Accept']:
         resp = make_response(inbox_graph.serialize(format='application/ld+json'))
@@ -74,15 +75,14 @@ def get_inbox():
     else:
         return 'Requested format unavailable', 415
 
-    resp.headers['X-Powered-By'] = 'https://github.com/albertmeronyo/pyldn'
+    resp.headers['X-Powered-By'] = 'https://github.com/jason/pyldn'
     resp.headers['Allow'] = "GET, HEAD, OPTIONS, POST"
     resp.headers['Link'] = '<http://www.w3.org/ns/ldp#Resource>; rel="type", <http://www.w3.org/ns/ldp#RDFSource>; rel="type", <http://www.w3.org/ns/ldp#Container>; rel="type", <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'
     resp.headers['Accept-Post'] = 'application/ld+json, text/turtle'
 
     return resp
 
-@app.route(pyldnconf._inbox_path, methods=['POST'])
-def post_inbox():
+def POST(self):
     pyldnlog.debug("Received request to create notification")
     pyldnlog.debug("Headers: {}".format(request.headers))
     # Check if there's acceptable content
@@ -109,7 +109,6 @@ def post_inbox():
 
     return resp, 201
 
-@app.route(pyldnconf._inbox_path + '<id>', methods=['GET'])
 def get_notification(id):
     pyldnlog.debug("Requested notification data of {}".format(request.url))
     pyldnlog.debug("Headers: {}".format(request.headers))
@@ -128,7 +127,7 @@ def get_notification(id):
     else:
         return 'Requested format unavailable', 415
 
-    resp.headers['X-Powered-By'] = 'https://github.com/albertmeronyo/pyldn'
+    resp.headers['X-Powered-By'] = 'https://github.com/jason/pyldn'
     resp.headers['Allow'] = "GET"
 
     return resp
