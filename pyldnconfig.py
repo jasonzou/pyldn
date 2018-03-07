@@ -2,7 +2,7 @@
 
 # config.py: An object to manage pyldn's config
 
-from ConfigParser import SafeConfigParser
+from configparser import ConfigParser
 import logging
 
 clog = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ class Pyldnconfig(object):
         Class constructor
         '''
         CONFIG_INI = 'config.ini'
-        config = SafeConfigParser()
+        config = ConfigParser()
         config.read(CONFIG_INI)
 
         self._base_path = config.get('ldn', 'basePath')

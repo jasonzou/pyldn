@@ -3,10 +3,11 @@
 # vim: set filetype=python expandtab tabstop=2 shiftwidth=2 autoindent smartindent:
 
 import cherrypy
+
 from SPARQLWrapper import SPARQLWrapper, JSON
 from urllib.parse import urlparse
 from cherrypy.lib import httputil
-from lib import cct2Templ
+from lib import pyldnTempl
 
 from cherrypy.lib.cptools import accept
 import pprint
@@ -16,9 +17,6 @@ import sys
 
 import simplejson                                                              
 import rdflib
-
-#import pydot
-#import ipaddr
 
 from lib import pyldnConst
 
@@ -37,24 +35,24 @@ To-do list:
 
 
 def error_page_404(status, message, traceback, version):
-    templ = cct2Templ.loader.load('cct2http404.html')
+    templ = pyldnTempl.loader.load('cct2http404.html')
     stream = templ.generate(status=status,message=message)
     return stream.render('xhtml')
     #return "Error %s - Well, I'm very sorry." % status
 
 def error_page_405(status, message, traceback, version):
-    templ = cct2Templ.loader.load('cct2http405.html')
+    templ = pyldnTempl.loader.load('cct2http405.html')
     stream = templ.generate(status=status,message=message)
     return stream.render('xhtml')
 
 def error_page_500(status, message, traceback, version):
-    templ = cct2Templ.loader.load('cct2http500.html')
+    templ = pyldnTempl.loader.load('cct2http500.html')
     stream = templ.generate(status=status,message=message)
     return stream.render('xhtml')
 
 def handle_error():
     cherrypy.response.status = 500
-    templ = cct2Templ.loader.load('cct2http500.html')
+    templ = pyldnTempl.loader.load('cct2http500.html')
     stream = templ.generate(status=500,message="Internal Server Error, please contact the site administrator jason.zou@gmail.com. ")
     response = stream.render('xhtml')
     cherrypy.response.body = [response]
@@ -84,6 +82,22 @@ class CCST(object):
         self.descList = []
         self.prefix = tmpl
         self.wadlDesc = ''
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+        static_dir = os.path.join(current_dir, '..', 'static')        
+
+        self.config = { '/': {'tools.basic_auth.on': True,
+                       'tools.basic_auth.realm': 'CherryPy Restricted space. Hint[user:cherrypy & pass:cherrypy]',
+                   'tools.basic_auth.users': {'cherrypy':encrypt_pw('cherrypy')},
+                              'tools.basic_auth.encrypt': encrypt_pw,
+                              'tools.staticdir.root': static_dir},
+                        '/static': {'tools.gzip.on': True,
+                                    'tools.staticdir.on': True,
+                                    'tools.staticdir.dir': ''},
+                        '/static/css': {'tools.gzip.mime_types':['text/css'],
+                                        'tools.staticdir.dir': 'css'},
+                        '/static/js': {'tools.gzip.mime_types': ['application/javascript'],
+                                       'tools.staticdir.dir': 'js'},
+            '/static/img': {'tools.staticdir.dir': 'images'}}
     
     def getWADLDescription(self):
         self.wadlDesc = self.OPTIONS(self.id)
@@ -179,7 +193,7 @@ class CCST(object):
         if id == None:
             self.id = '/'
             tmpl = self.tmpl+'wadlDesc.xml'
-            templ = cct2Templ.loader.load(tmpl)
+            templ = pyldnTempl.loader.load(tmpl)
             stream = templ.generate(conceptId=self.id)
             return stream.render('xml')
         else:
@@ -191,7 +205,7 @@ class CCST(object):
             if tempValue != None:
                 log("OPTIONS")
                 tmpl = self.tmpl+'wadlDesc.xml'
-                templ = cct2Templ.loader.load(tmpl)
+                templ = pyldnTempl.loader.load(tmpl)
                 stream = templ.generate(conceptId=self.id)
                 return stream.render('xml')
         #self.searchHtml()
@@ -200,7 +214,7 @@ class CCST(object):
 
     def html(self):
         tmpl = self.tmpl+'Index.html'
-        templ = cct2Templ.loader.load(tmpl)
+        templ = pyldnTempl.loader.load(tmpl)
 
         self.description()
         if len(self.descList) == 0:
@@ -254,7 +268,7 @@ class Thesaurus(object):
         #mainNodes = []
         #self.description()
         templStr = self.prefix+"Index.html"
-        templ = cct2Templ.loader.load(templStr)
+        templ = pyldnTempl.loader.load(templStr)
         elapsedTime = time.time() - self.startime
 
         self.descList = []
@@ -347,7 +361,7 @@ class notImplemented(object):
         
         #self.description()
         templStr = self.prefix+"IndexNotImplemented.html"
-        templ = cct2Templ.loader.load(templStr)
+        templ = pyldnTempl.loader.load(templStr)
         stream = templ.generate(descs=self.descList,json=json)
         return stream.render('xhtml')
        
@@ -576,7 +590,7 @@ class CCTSearch(object):
             #log("resulttt =====> " + zh)
             myresult.append(link(id, pinyin,zh))
         
-        templ = cct2Templ.loader.load('record.html')
+        templ = pyldnTempl.loader.load('record.html')
         stream = templ.generate(links=self.orderedList(myresult), keyword=query)
         return stream.render("xhtml",doctype="xhtml")
         #return ""
