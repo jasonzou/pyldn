@@ -4,6 +4,9 @@
 
 import cherrypy
 
+_inbox_url = 'localhost:8080/inbox'
+_ldn_counter = 0
+
 RDFNS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 RDFSNS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 SKOSNS = "http://www.w3.org/2004/02/skos/core#"
