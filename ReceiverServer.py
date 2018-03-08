@@ -215,6 +215,7 @@ class LDNReceiverServer(object):
     def start(self):
         self.rootServer = Receiver() 
         self.rootServer.inbox = Inbox()
+        cherrypy.config.update(pyldnConst.GLOBALCONFIG) 
         cherrypy.tree.mount(self.rootServer, "/", config=self.config)
 
         cherrypy.engine.start()
